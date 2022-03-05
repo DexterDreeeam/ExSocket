@@ -64,13 +64,13 @@ struct Packet
 };
 
 // ================== custom ==================
-const bool print_msg           = true;
-const u32  session_id          = 1234;
-const u32  udp_mtu             = 1 << 10;
-const u32  waiting_window      = 16;
-const u32  receiver_thread_cnt = 6;
-const u32  socket_receive_buf  = 1024 * 1024 * 128;
-const u32  socket_send_buf     = 1024 * 1024 * 64;
+const bool print_msg              = true;
+const u32  session_id             = 1234;
+const u32  udp_mtu                = 1 << 10;
+const u32  waiting_window         = 16;
+const u32  receiver_thread_cnt    = 6;
+const u32  socket_receive_buf_mb  = 128;
+const u32  socket_send_buf_mb     = 64;
 
 // ***************** constant *****************
 const u32  udp_mtu_min         = 1 << 9;
@@ -78,6 +78,8 @@ const u32  udp_mtu_max         = 1 << 12;
 const u32  thread_cnt_min      = 1;
 const u32  thread_cnt_max      = 8;
 const u32  data_max_len        = udp_mtu - sizeof(Packet);
+const u32  socket_receive_buf  = (1024 * 1024) * socket_receive_buf_mb;
+const u32  socket_send_buf     = (1024 * 1024) * socket_send_buf_mb;
 
 struct _eu_endl {} __declspec(selectany) endl;
 
