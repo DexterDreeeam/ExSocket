@@ -3,4 +3,7 @@
   <ItemGroup>
     <ClInclude Include="ex_udp.hpp" />
   </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="EntryPoint.cpp" />
+  </ItemGroup>
 </Project>

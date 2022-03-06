@@ -67,9 +67,9 @@ struct Packet
 const bool print_msg              = true;
 const u32  session_id             = 1234;
 const u32  udp_mtu                = 1 << 10;
-const u32  waiting_window         = 16;
-const u32  receiver_thread_cnt    = 6;
-const u32  socket_receive_buf_mb  = 128;
+const u32  waiting_window         = 32;
+const u32  receiver_thread_cnt    = 8;
+const u32  socket_receive_buf_mb  = 512;
 const u32  socket_send_buf_mb     = 64;
 
 // ***************** constant *****************
@@ -260,15 +260,15 @@ private:
         for (u32 i = 0; i < receiver_thread_cnt; ++i)
         {
             auto t = ref<thread>(new thread(
-                [&]() mutable
-                { this->thread_loop(); }));
+                [&, i]() mutable
+                { this->thread_loop(i); }));
 
             _thread_list.push_back(t);
         }
         return true;
     }
 
-    void thread_loop()
+    void thread_loop(u32 thread_id)
     {
         while (_thread_terminating.load() == false)
         {
@@ -277,7 +277,7 @@ private:
             s32 pkt_len = recvfrom(_sk, (char*)pkt.get(), udp_mtu_max, 0, (sockaddr*)&_addr, &addr_len);
             if (pkt_len <= 0)
             {
-                sleep_ms(1);
+                sleep_us(50 + thread_id);
                 continue;
             }
 
@@ -286,12 +286,13 @@ private:
             if (pg)
             {
                 pg->Enqueue(pw);
-            }
-            else
-            {
-                create_pg(pw);
+                continue;
             }
 
+            if (!create_pg(pw))
+            {
+                continue;
+            }
             if (check_pg_list_overflow())
             {
                 trim_pg_list();
@@ -314,16 +315,20 @@ private:
         return ret;
     }
 
-    void create_pg(const PacketWrapper& pw)
+    bool create_pg(const PacketWrapper& pw)
     {
         rw_unique_guard gd(_pg_list_mtx);
+        //if (_pg_list.size() && _pg_list.rbegin()->get()->Index() >= pw.pkt->index + waiting_window)
+        //{
+        //    return false;
+        //}
         for (auto pg : _pg_list)
         {
             if (pg->Index() == pw.pkt->index)
             {
                 gd.unlock();
                 pg->Enqueue(pw);
-                return;
+                return false;
             }
         }
 
@@ -337,6 +342,7 @@ private:
             }
         }
         _pg_list.insert(itr, pg);
+        return true;
     }
 
     bool check_pg_list_overflow()
