@@ -67,10 +67,10 @@ struct Packet
 const bool print_msg              = true;
 const u32  session_id             = 1234;
 const u32  udp_mtu                = 1 << 10;
-const u32  waiting_window         = 32;
+const u32  waiting_window         = 64;
 const u32  receiver_thread_cnt    = 8;
-const u32  socket_receive_buf_mb  = 512;
-const u32  socket_send_buf_mb     = 64;
+const u32  socket_receive_buf_mb  = 32;
+const u32  socket_send_buf_mb     = 4;
 
 // ***************** constant *****************
 const u32  udp_mtu_min         = 1 << 9;

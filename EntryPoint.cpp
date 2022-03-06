@@ -7,10 +7,10 @@
 
 #include "ex_udp.hpp"
 
-int max_ints = 4096;
-int sender_thread_cnt = 2;
-int receiver_thread_cnt = 4;
-int packets_cnt_per_thread = 1 << 14;
+int max_ints = 1 << 22;
+int sender_thread_cnt = 1;
+int receiver_thread_cnt = 8;
+int packets_cnt_per_thread = 1 << 11;
 
 void receive_report(long long cnt)
 {
