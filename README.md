@@ -1,8 +1,10 @@
-# ExUdp
+# ExSocket
 
-Simple Enhanced UDP & TCP connection
+## Simple Enhanced UDP & TCP connection
 
-UDP socket without set size limitation.
-Unpacking and Grouping handling.
+### UDP
+* UDP socket without set size limitation.
+* Unpacking and Grouping handling.
 
-TCP socket with simple and modern C++ interface
+### TCP
+* TCP socket with simple and modern C++ interface
