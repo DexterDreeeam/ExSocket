@@ -57,20 +57,36 @@ public:
     int Read(SOCKET client_sk, void* buf)
     {
         Packet header;
-        int recv_len = recv(client_sk, (char*)&header, sizeof(Packet), 0);
+        s32 recv_len = recv(client_sk, (char*)&header, sizeof(Packet), 0);
         if (recv_len < 0 || header.data_len <= 0)
         {
             closesocket(client_sk);
             return -1;
         }
 
-        bool is_success = recv(client_sk, (char*)buf, header.data_len, 0) == header.data_len;
-        if (!is_success)
-        {
-            closesocket(client_sk);
-            return -1;
-        }
+        s32 try_times = 0;
+        recv_len = 0;
 
+        while (1)
+        {
+            s32 len = recv(client_sk, (char*)buf + recv_len, header.data_len - recv_len, 0);
+            if (len > 0)
+            {
+                recv_len += len;
+                try_times = 0;
+            }
+            ++try_times;
+            if (recv_len >= (s32)header.data_len)
+            {
+                break;
+            }
+            sleep_us(50);
+            if (try_times >= 30)
+            {
+                closesocket(client_sk);
+                return -1;
+            }
+        }
         return (int)header.data_len;
     }
 
