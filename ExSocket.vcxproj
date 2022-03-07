@@ -46,6 +46,9 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="ex_common.hpp" />
+    <ClInclude Include="ex_socket.hpp" />
+    <ClInclude Include="ex_tcp.hpp" />
     <ClInclude Include="ex_udp.hpp" />
   </ItemGroup>
   <ItemGroup>
