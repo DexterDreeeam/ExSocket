@@ -377,7 +377,7 @@ public:
 
         Packet* pkt = (Packet*)_buf;
         pkt->session_id = session_id;
-        pkt->numor = numor;
+        pkt->numor = (u16)numor;
         pkt->detor = (u16)packet_split_cnt;
         pkt->index = index;
         data_len = send_len <= data_max_len ? send_len : data_max_len;
@@ -395,7 +395,7 @@ public:
         {
             pkt = (Packet*)(pBuf - sizeof(Packet));
             pkt->session_id = session_id;
-            pkt->numor = numor;
+            pkt->numor = (u16)numor;
             pkt->detor = (u16)packet_split_cnt;;
             pkt->index = index;
             data_len = send_len <= data_max_len ? send_len : data_max_len;

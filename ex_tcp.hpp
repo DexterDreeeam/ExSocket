@@ -47,10 +47,6 @@ public:
     {
         sockaddr _addr;
         SOCKET client_sk = accept(_sk, &_addr, nullptr);
-        if (client_sk < 0)
-        {
-            return -1;
-        }
         return client_sk;
     }
 

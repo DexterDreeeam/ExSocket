@@ -1,5 +1,7 @@
 #pragma once
 
+#define _CRT_SECURE_NO_WARNINGS
+
 #include <algorithm>
 #include <atomic>
 #include <chrono>
@@ -39,9 +41,9 @@ template<typename T>               using vec = std::vector<T>;
 template<typename T>               using list = std::list<T>;
 template<typename T>               using ref = std::shared_ptr<T>;
 
-void yield() { std::this_thread::yield(); }
-void sleep_ms(u32 s) { std::this_thread::sleep_for(std::chrono::milliseconds(s)); }
-void sleep_us(u32 s) { std::this_thread::sleep_for(std::chrono::microseconds(s)); }
+inline void yield() { std::this_thread::yield(); }
+inline void sleep_ms(u32 s) { std::this_thread::sleep_for(std::chrono::milliseconds(s)); }
+inline void sleep_us(u32 s) { std::this_thread::sleep_for(std::chrono::microseconds(s)); }
 
 // set 'false' if disable print
 const bool print_msg = true;
