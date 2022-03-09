@@ -28,30 +28,6 @@ const u32  session_id = 1234;
 class Receiver
 {
 public:
-    class ThreadHandler
-    {
-    public:
-        static ref<ThreadHandler> Build(atom<s32>& counter)
-        {
-            return ref<ThreadHandler>(::new ThreadHandler(counter));
-        }
-
-        ~ThreadHandler() noexcept
-        {
-            --_counter;
-        }
-
-    protected:
-        ThreadHandler(atom<s32>& counter) :
-            _counter(counter)
-        {
-            ++_counter;
-        }
-
-        atom<s32>&  _counter;
-    };
-
-public:
     static ref<Receiver> Build(u32 port)
     {
         auto r = ref<Receiver>(new Receiver());
@@ -72,47 +48,44 @@ public:
         }
     }
 
-    int Read(SOCKET client_sk, void* buf)
+    int Read(void* buf)
     {
-        Packet header;
-        s32 recv_len = recv(client_sk, (char*)&header, sizeof(Packet), 0);
-        if (recv_len < 0 || header.data_len <= 0)
-        {
-            closesocket(client_sk);
-            return -1;
-        }
+        //auto mem = ReadMemory();
+        //if (mem)
+        //{
+        //    memcpy(buf, mem.get(), mem.size());
+        //    return mem.size();
+        //}
+        //else
+        //{
+        //    return 0;
+        //}
+    }
 
-        s32 try_times = 0;
-        recv_len = 0;
+    auto Read()
+    {
+        return ReadMemory();
+    }
 
-        while (1)
-        {
-            s32 len = recv(client_sk, (char*)buf + recv_len, header.data_len - recv_len, 0);
-            if (len > 0)
-            {
-                recv_len += len;
-                try_times = 0;
-            }
-            ++try_times;
-            if (recv_len >= (s32)header.data_len)
-            {
-                break;
-            }
-            sleep_us(50);
-            if (try_times >= 30)
-            {
-                closesocket(client_sk);
-                return -1;
-            }
-        }
-        return (int)header.data_len;
+    int Count()
+    {
+        //return Count(_memory_arr_begin.load());
+    }
+
+    bool IsConnecting() const
+    {
+        return _is_connecting;
     }
 
 private:
     Receiver() :
         _sk(0),
         _stop_token(false),
-        _thread_counter(0)
+        _thread_counter(0),
+        _is_connecting(false)//,
+        //_memory_arr(),
+        //_memory_arr_begin(0),
+        //_memory_arr_end(0)
     {
     }
 
@@ -158,27 +131,28 @@ private:
             return false;
         }
 
-        auto th = ThreadHandler::Build(_thread_counter);
-        thread t([=]() mutable { this->RunningThread(th); });
+        thread t([=]() mutable { this->RunningThread(); });
         t.detach();
 
         return true;
     }
 
-    void RunningThread(ref<ThreadHandler> th)
+    void RunningThread()
     {
-        th;
+        escape_function ef = [=]() { --_thread_counter; };
+        ++_thread_counter;
+
         while (!_stop_token)
         {
-            timeval tv = { 0, 100 };
-            fd_set skset;
-            FD_ZERO(&skset);
-            FD_SET(_sk, &skset);
-            if (select(0, &skset, nullptr, nullptr, &tv) <= 0)
-            {
-                sleep_ms(200);
-                continue;
-            }
+            //timeval tv = { 0, 100 };
+            //fd_set skset;
+            //FD_ZERO(&skset);
+            //FD_SET(_sk, &skset);
+            //if (select(0, &skset, nullptr, nullptr, &tv) <= 0)
+            //{
+            //    sleep_ms(200);
+            //    continue;
+            //}
             sockaddr _addr;
             auto client_sk = accept(_sk, &_addr, nullptr);
             if (client_sk <= 0)
@@ -190,57 +164,152 @@ private:
         }
     }
 
+    //void ListenClient(SOCKET client_sk)
+    //{
+    //    escape_function ef =
+    //        [=]()
+    //        {
+    //            _is_connecting = false;
+    //            closesocket(client_sk);
+    //        };
+    //    _is_connecting = true;
+    //    Packet header;
+    //    while (!_stop_token)
+    //    {
+    //        s32 recv_len = recv(client_sk, (char*)&header, sizeof(Packet), 0);
+    //        if (recv_len == 0)
+    //        {
+    //            sleep_us(50);
+    //            continue;
+    //        }
+    //        if (recv_len < 0 || header.data_len <= 0)
+    //        {
+    //            // receive packet fail
+    //            return;
+    //        }
+    //        auto mem = auto_memory(header.data_len + 64);
+    //        if (!mem)
+    //        {
+    //            // allocate memory fail
+    //            return;
+    //        }
+    //        s32 try_times = 0;
+    //        recv_len = 0;
+    //        while (1)
+    //        {
+    //            s32 len = recv(client_sk, mem.get<char>() + recv_len, header.data_len - recv_len, 0);
+    //            if (len > 0)
+    //            {
+    //                recv_len += len;
+    //                try_times = 0;
+    //            }
+    //            ++try_times;
+    //            if (recv_len >= (s32)header.data_len)
+    //            {
+    //                // packet data receive complete
+    //                break;
+    //            }
+    //            if (_stop_token || try_times >= 80)
+    //            {
+    //                return;
+    //            }
+    //            sleep_us(50);
+    //        }
+    //        //u32 end_idx = _memory_arr_end++;
+    //        //_memory_arr[end_idx % _memory_arr_len] = mem;
+    //        mutex_guard mg(_memory_list_mtx);
+    //        _memory_list.push_back(mem);
+    //    }
+    //}
+
     void ListenClient(SOCKET client_sk)
     {
         escape_function ef =
-            [=](){ closesocket(client_sk); };
-
+            [=]()
+        {
+            _is_connecting = false;
+            closesocket(client_sk);
+        };
+        _is_connecting = true;
+        Packet header;
         while (!_stop_token)
         {
-            Packet header;
             s32 recv_len = recv(client_sk, (char*)&header, sizeof(Packet), 0);
             if (recv_len == 0)
             {
-                sleep_ms(50);
+                sleep_us(50);
                 continue;
             }
             if (recv_len < 0 || header.data_len <= 0)
             {
+                // receive packet fail
                 return;
             }
-
-            auto mem = auto_memory::Build(1024 * 1024 * 4);
+            char* mem = new char[header.data_len + 128];
+            memset(mem + header.data_len, 0, 128);
+            if (!mem)
+            {
+                // allocate memory fail
+                return;
+            }
             s32 try_times = 0;
             recv_len = 0;
-            while (1)
-            {
-                s32 len = recv(client_sk, (char*)buf + recv_len, header.data_len - recv_len, 0);
-                if (len > 0)
-                {
-                    recv_len += len;
-                    try_times = 0;
-                }
-                ++try_times;
-                if (recv_len >= (s32)header.data_len)
-                {
-                    break;
-                }
-                sleep_us(50);
-                if (try_times >= 30)
-                {
-                    closesocket(client_sk);
-                    return -1;
-                }
-            }
-            return (int)header.data_len;
+
+                s32 len = recv(client_sk, mem, header.data_len, 0);
+
+            mutex_guard mg(_memory_list_mtx);
+            _memory_list.push_back(pair<int, char*>(recv_len, mem));
         }
     }
 
+    int Count(u32 begin_idx) const
+    {
+        //u64 end_idx = (u64)_memory_arr_end + (_memory_arr_len << 8);
+        //return (end_idx - begin_idx) % _memory_arr_len;
+    }
+
+    //auto_memory ReadMemory()
+    //{
+    //    while (1)
+    //    {
+    //        u32 begin_idx = _memory_arr_begin.load();
+    //        if (!Count(begin_idx))
+    //        {
+    //            return auto_memory();
+    //        }
+    //        if (_memory_arr_begin.compare_exchange_strong(begin_idx, begin_idx + 1))
+    //        {
+    //            return _memory_arr[begin_idx % _memory_arr_len];
+    //        }
+    //    }
+    //}
+
+    pair<int, char*> ReadMemory()
+    {
+        pair<int, char*> ret = { 0, nullptr };
+        mutex_guard mg(_memory_list_mtx);
+        if (_memory_list.size())
+        {
+            ret = _memory_list.front();
+            _memory_list.pop_front();
+        }
+        return ret;
+    }
+
+public:
+    static const u32 _memory_arr_len = 1 << 8;
+
 private:
-    SOCKET         _sk;
-    volatile bool  _stop_token;
-    atom<s32>      _thread_counter;
-    
+    SOCKET            _sk;
+    volatile bool     _stop_token;
+    atom<s32>         _thread_counter;
+    volatile bool     _is_connecting;
+    //auto_memory       _memory_arr[_memory_arr_len];
+    //atom<u32>         _memory_arr_begin;
+    //volatile u32      _memory_arr_end;
+
+    list<pair<int, char*>>    _memory_list;
+    mutex             _memory_list_mtx;
 };
 
 class Sender

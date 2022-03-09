@@ -157,23 +157,23 @@ void receive_report(long long cnt)
 void receive()
 {
     auto receiver = Es::Tcp::Receiver::Build(10086);
-
+    int cnt = 0;
     while (1)
     {
-        auto client = receiver->WaitClient();
-        std::cout << "New client connected" << std::endl;
+        //auto client = receiver->WaitClient();
+        //std::cout << "New client connected" << std::endl;
 
-        int cnt = 0;
         char* buf = new char[1024 * 1024 * 64];
-        while (receiver->Read(client, buf) > 0)
+        int len = receiver->Read(buf);
+        if (len > 0)
         {
             ++cnt;
             receive_report(cnt);
         }
         delete[] buf;
 
-        std::cout << "New client disconnected" << std::endl;
-        std::cout << "==================" << std::endl;
+        //std::cout << "New client disconnected" << std::endl;
+        //std::cout << "==================" << std::endl;
     }
 }
 

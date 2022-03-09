@@ -78,6 +78,126 @@ public:
 
 __declspec(selectany) _eu_cout cout;
 
+class auto_memory
+{
+    struct internal_memory
+    {
+        internal_memory() :
+            _ptr(nullptr),
+            _size(0)
+        {
+        }
+
+        ~internal_memory()
+        {
+            mem_free();
+        }
+
+        bool mem_alloc(u32 size)
+        {
+            mem_free();
+            _ptr = malloc(size);
+            if (_ptr)
+            {
+                _size = size;
+            }
+            return _ptr != nullptr;
+        }
+
+        void mem_free()
+        {
+            if (_ptr)
+            {
+                free(_ptr);
+                _ptr = nullptr;
+                _size = 0;
+            }
+        }
+
+        void* _ptr;
+        u32   _size;
+    };
+
+public:
+    auto_memory() :
+        _ref()
+    {
+    }
+
+    auto_memory(u32 size)
+    {
+        auto r = ref<internal_memory>(::new internal_memory());
+        if (r.get())
+        {
+            r->mem_alloc(size);
+            if (r->_ptr)
+            {
+                _ref = r;
+            }
+        }
+    }
+
+    auto_memory(const auto_memory& rhs) :
+        _ref(rhs._ref)
+    {
+    }
+
+    auto_memory(auto_memory&& rhs) noexcept :
+        _ref()
+    {
+        _ref.swap(rhs._ref);
+    }
+
+    auto_memory& operator =(const auto_memory& rhs)
+    {
+        _ref = rhs._ref;
+        return *this;
+    }
+
+    auto_memory& operator =(auto_memory&& rhs) noexcept
+    {
+        _ref.swap(rhs._ref);
+        return *this;
+    }
+
+    ~auto_memory() = default;
+
+    operator bool()
+    {
+        return _ref.get() != nullptr;
+    }
+
+    bool operator ==(const auto_memory& rhs)
+    {
+        return _ref.get() == rhs._ref.get();
+    }
+
+    bool operator !=(const auto_memory& rhs)
+    {
+        return _ref.get() != rhs._ref.get();
+    }
+
+    template<typename Ty = void>
+    Ty* get()
+    {
+        return _ref.get() ? reinterpret_cast<Ty*>(_ref->_ptr) : nullptr;
+    }
+
+    template<typename Ty = void>
+    const Ty* get() const
+    {
+        return _ref.get() ? reinterpret_cast<Ty*>(_ref->_ptr) : nullptr;
+    }
+
+    u32 size() const
+    {
+        return _ref.get() ? _ref->_size : 0;
+    }
+
+private:
+    ref<internal_memory> _ref;
+};
+
 class escape_function
 {
     class internal_release_base
@@ -98,7 +218,7 @@ class escape_function
     public:
         internal_release(Fn_Ty fn) :
             _fn(fn),
-            _is_active(boole::True)
+            _is_active(true)
         {}
 
         virtual ~internal_release() override
@@ -111,12 +231,12 @@ class escape_function
 
         virtual void disable() override
         {
-            _is_active = boole::False;
+            _is_active = false;
         }
 
     private:
         Fn_Ty _fn;
-        boole _is_active;
+        bool  _is_active;
     };
 
 public:
