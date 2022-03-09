@@ -28,26 +28,48 @@ const u32  session_id = 1234;
 class Receiver
 {
 public:
+    class ThreadHandler
+    {
+    public:
+        static ref<ThreadHandler> Build(atom<s32>& counter)
+        {
+            return ref<ThreadHandler>(::new ThreadHandler(counter));
+        }
+
+        ~ThreadHandler() noexcept
+        {
+            --_counter;
+        }
+
+    protected:
+        ThreadHandler(atom<s32>& counter) :
+            _counter(counter)
+        {
+            ++_counter;
+        }
+
+        atom<s32>&  _counter;
+    };
+
+public:
     static ref<Receiver> Build(u32 port)
     {
         auto r = ref<Receiver>(new Receiver());
-        return r->init(port) ? r : ref<Receiver>();
+        return r->Init(port) ? r : ref<Receiver>();
     }
 
     ~Receiver()
     {
+        _stop_token = true;
+        while (_thread_counter.load() > 0)
+        {
+            sleep_ms(50);
+        }
         if (_sk)
         {
             closesocket(_sk);
             _sk = 0;
         }
-    }
-
-    SOCKET WaitClient()
-    {
-        sockaddr _addr;
-        SOCKET client_sk = accept(_sk, &_addr, nullptr);
-        return client_sk;
     }
 
     int Read(SOCKET client_sk, void* buf)
@@ -87,9 +109,14 @@ public:
     }
 
 private:
-    Receiver() = default;
+    Receiver() :
+        _sk(0),
+        _stop_token(false),
+        _thread_counter(0)
+    {
+    }
 
-    bool init(u32 port)
+    bool Init(u32 port)
     {
         WSADATA wsa_data = {};
         if (WSAStartup(MAKEWORD(2, 2), &wsa_data) != 0)
@@ -131,11 +158,89 @@ private:
             return false;
         }
 
+        auto th = ThreadHandler::Build(_thread_counter);
+        thread t([=]() mutable { this->RunningThread(th); });
+        t.detach();
+
         return true;
     }
 
+    void RunningThread(ref<ThreadHandler> th)
+    {
+        th;
+        while (!_stop_token)
+        {
+            timeval tv = { 0, 100 };
+            fd_set skset;
+            FD_ZERO(&skset);
+            FD_SET(_sk, &skset);
+            if (select(0, &skset, nullptr, nullptr, &tv) <= 0)
+            {
+                sleep_ms(200);
+                continue;
+            }
+            sockaddr _addr;
+            auto client_sk = accept(_sk, &_addr, nullptr);
+            if (client_sk <= 0)
+            {
+                sleep_ms(200);
+                continue;
+            }
+            ListenClient(client_sk);
+        }
+    }
+
+    void ListenClient(SOCKET client_sk)
+    {
+        escape_function ef =
+            [=](){ closesocket(client_sk); };
+
+        while (!_stop_token)
+        {
+            Packet header;
+            s32 recv_len = recv(client_sk, (char*)&header, sizeof(Packet), 0);
+            if (recv_len == 0)
+            {
+                sleep_ms(50);
+                continue;
+            }
+            if (recv_len < 0 || header.data_len <= 0)
+            {
+                return;
+            }
+
+            auto mem = auto_memory::Build(1024 * 1024 * 4);
+            s32 try_times = 0;
+            recv_len = 0;
+            while (1)
+            {
+                s32 len = recv(client_sk, (char*)buf + recv_len, header.data_len - recv_len, 0);
+                if (len > 0)
+                {
+                    recv_len += len;
+                    try_times = 0;
+                }
+                ++try_times;
+                if (recv_len >= (s32)header.data_len)
+                {
+                    break;
+                }
+                sleep_us(50);
+                if (try_times >= 30)
+                {
+                    closesocket(client_sk);
+                    return -1;
+                }
+            }
+            return (int)header.data_len;
+        }
+    }
+
 private:
-    SOCKET _sk;
+    SOCKET         _sk;
+    volatile bool  _stop_token;
+    atom<s32>      _thread_counter;
+    
 };
 
 class Sender
