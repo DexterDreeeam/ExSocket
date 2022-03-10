@@ -9,13 +9,13 @@
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>
     <Keyword>Win32Proj</Keyword>
-    <ProjectGuid>{925e5875-73a6-4a73-b6be-7ddc381e2bb5}</ProjectGuid>
-    <RootNamespace>ExUdp</RootNamespace>
+    <ProjectGuid>{af6444d0-ba55-4a15-be80-9f92457a0587}</ProjectGuid>
+    <RootNamespace>ExSocket</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
-    <ConfigurationType>Application</ConfigurationType>
+    <ConfigurationType>Utility</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <PlatformToolset>v143</PlatformToolset>
     <CharacterSet>NotSet</CharacterSet>
@@ -38,7 +38,6 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <LanguageStandard>stdcpplatest</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -46,13 +45,14 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="ex_common.hpp" />
-    <ClInclude Include="ex_socket.hpp" />
-    <ClInclude Include="ex_tcp.hpp" />
-    <ClInclude Include="ex_udp.hpp" />
+    <ClInclude Include="es.hpp" />
+    <ClInclude Include="internal\common.hpp" />
+    <ClInclude Include="internal\tcp.hpp" />
+    <ClInclude Include="internal\udp.hpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="EntryPoint.cpp" />
+    <None Include="internal\tcp.inl" />
+    <None Include="internal\udp.inl" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
