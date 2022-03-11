@@ -25,10 +25,6 @@ void tcp_recv()
     class my_notifier : public es::tcp::notifier
     {
     public:
-        my_notifier()
-        {
-        }
-
         virtual void on_client_connect(long long client) override
         {
             std::cout << "Client " << client << " connected." << std::endl;
