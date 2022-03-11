@@ -9,7 +9,11 @@ const bool print_msg = true;
 // id for connection
 const unsigned int session_id = 1234;
 
-const unsigned int max_tcp_clients = 4;
+// packet max len
+const unsigned int tcp_packet_max_len = 1024 * 1024 * 64;
+
+// tcp disconnect if no data for period (milliseconds), 0 means no limit
+const unsigned int tcp_data_timeout = 1000 * 10;
 
 }
 

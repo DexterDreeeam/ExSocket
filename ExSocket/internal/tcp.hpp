@@ -5,51 +5,52 @@
 namespace es
 {
 
-namespace _internal
-{
-
-struct tcp_client_ctx
-{
-    long long          sk; // sk > 0, connecting ; sk <= 0, disconnected
-    list<auto_memory>  memory_list;
-    mutex              list_mtx;
-};
-
-}
-
 namespace tcp
 {
 
-using namespace ::es::_internal;
+class notifier
+{
+public:
+    notifier() = default;
+
+    virtual ~notifier() = default;
+
+    virtual void on_client_connect(long long client) = 0;
+
+    virtual void on_client_disconnect(long long client) = 0;
+
+    virtual void on_message_arrive(long long client, const void* msg, long long msg_len) = 0;
+};
 
 class receiver
 {
 public:
-    static ref<receiver> build(int port);
+    static es::_internal::ref<receiver> build(int port, notifier* notifier);
 
     ~receiver();
-
-    bool read(long long& client_id, void* output_buf, long long& read_len);
 
     void close();
 
 private:
     receiver();
 
-    bool init(int port);
+    bool init(int port, notifier* notifier);
+
+    void main_thread();
+
+    void client_thread(long long client);
 
 private:
-    long long                  _sk;
-    volatile bool              _stop;
-    atom<long long>            _thread_cnt;
-    list<ref<tcp_client_ctx>>  _client_list;
-    rw_mtx                     _client_list_mtx;
+    long long                      _sk;
+    volatile bool                  _stop;
+    es::_internal::atom<long long> _thread_cnt;
+    notifier*                      _notifier;
 };
 
 class sender
 {
 public:
-    static ref<sender> build(const char* ip, int port);
+    static es::_internal::ref<sender> build(const char* ip, int port);
 
     ~sender();
 
@@ -63,8 +64,8 @@ private:
     bool init(const char* ip, int port);
 
 private:
-    long long _sk;
-    mutex     _mtx;
+    long long              _sk;
+    es::_internal::mutex   _mtx;
 };
 
 }

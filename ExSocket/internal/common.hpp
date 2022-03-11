@@ -23,6 +23,8 @@ namespace es
 
 extern const bool print_msg;
 
+const unsigned int socket_select_waiting_ms = 500;
+
 namespace _internal
 {
 
