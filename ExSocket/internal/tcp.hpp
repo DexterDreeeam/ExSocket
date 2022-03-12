@@ -19,7 +19,7 @@ public:
 
     virtual void on_client_disconnect(long long client) = 0;
 
-    virtual void on_message_arrive(long long client, const void* msg, long long msg_len) = 0;
+    virtual void on_message_arrive(long long client, void* msg, long long msg_len) = 0;
 };
 
 class receiver
