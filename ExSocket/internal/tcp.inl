@@ -31,7 +31,7 @@ using namespace es::_internal;
 namespace tcp
 {
 
-ref<receiver> receiver::build(int port, notifier* notifier)
+inline ref<receiver> receiver::build(int port, notifier* notifier)
 {
     if (port <= 0 || !notifier)
     {
@@ -41,12 +41,12 @@ ref<receiver> receiver::build(int port, notifier* notifier)
     return r->init(port, notifier) ? r : ref<receiver>();
 }
 
-receiver::~receiver()
+inline receiver::~receiver()
 {
     close();
 }
 
-void receiver::close()
+inline void receiver::close()
 {
     _stop = true;
     while (_thread_cnt.load() > 0)
@@ -62,7 +62,7 @@ void receiver::close()
     }
 }
 
-receiver::receiver() :
+inline receiver::receiver() :
     _sk(0),
     _stop(false),
     _thread_cnt(0),
@@ -70,7 +70,7 @@ receiver::receiver() :
 {
 }
 
-bool receiver::init(int port, notifier* notifier)
+inline bool receiver::init(int port, notifier* notifier)
 {
     WSADATA wsa_data = {};
     if (::WSAStartup(MAKEWORD(2, 2), &wsa_data) != 0)
@@ -119,7 +119,7 @@ bool receiver::init(int port, notifier* notifier)
     return true;
 }
 
-void receiver::main_thread()
+inline void receiver::main_thread()
 {
     escape_function ef = [&]() mutable { --_thread_cnt; };
 
@@ -163,7 +163,7 @@ void receiver::main_thread()
     }
 }
 
-void receiver::client_thread(long long client)
+inline void receiver::client_thread(long long client)
 {
     char* buffer = new char[tcp_packet_max_len];
     escape_function ef =
@@ -246,7 +246,7 @@ void receiver::client_thread(long long client)
     }
 }
 
-ref<sender> sender::build(const char* ip, int port)
+inline ref<sender> sender::build(const char* ip, int port)
 {
     if (!ip || port <= 0)
     {
@@ -256,7 +256,7 @@ ref<sender> sender::build(const char* ip, int port)
     return r->init(ip, port) ? r : ref<sender>();
 }
 
-sender::~sender()
+inline sender::~sender()
 {
     if (_sk > 0)
     {
@@ -265,7 +265,7 @@ sender::~sender()
     }
 }
 
-bool sender::send(const void* buf, long long send_len)
+inline bool sender::send(const void* buf, long long send_len)
 {
     if (!buf || send_len <= 0)
     {
@@ -288,13 +288,13 @@ bool sender::send(const void* buf, long long send_len)
     return true;
 }
 
-sender::sender() :
+inline sender::sender() :
     _sk(0),
     _mtx()
 {
 }
 
-bool sender::init(const char* ip, int port)
+inline bool sender::init(const char* ip, int port)
 {
     WSADATA wsa_data = {};
     if (::WSAStartup(MAKEWORD(2, 2), &wsa_data) != 0)
