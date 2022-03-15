@@ -13,6 +13,7 @@
 #include <mutex>
 #include <shared_mutex>
 #include <thread>
+#include <vector>
 #include <winsock.h>
 
 #pragma comment(lib, "ws2_32.lib")

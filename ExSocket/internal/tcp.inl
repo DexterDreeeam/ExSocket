@@ -242,7 +242,7 @@ inline void receiver::client_thread(long long client)
             }
             recv_len += rst;
         }
-        _notifier->on_message_arrive(client, buffer, pkt.data_len);
+        _notifier->on_message_arrive(client, buffer, recv_len);
     }
 }
 
